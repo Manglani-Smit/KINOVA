@@ -1,0 +1,23 @@
+# Virtual Environment
+env/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django local database & static builds
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# IDE & OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+.env
