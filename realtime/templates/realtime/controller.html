@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Kinova · Gesture Controller</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,189 +36,167 @@
   #vignette { background: radial-gradient(ellipse at center, transparent 40%, rgba(3,3,5,0.88) 100%); }
   #top-fade  { background: linear-gradient(to bottom, rgba(3,3,5,0.95) 0%, transparent 100%); height: 130px; bottom: auto; }
   #bottom-fade { background: linear-gradient(to top, rgba(3,3,5,0.98) 0%, transparent 100%); height: 240px; top: auto; }
-  .ambient { position: fixed; border-radius: 50%; pointer-events: none; z-index: 1; filter: blur(100px); }
 
-  #hud-top { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; }
-  .kinova-logo { display: flex; align-items: center; gap: 10px; }
+  #hud-top { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; }
+  .kinova-logo { display: flex; align-items: center; gap: 8px; }
   .kinova-logo-mark {
-    width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--violet) 0%, var(--cyan) 100%);
+    width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--violet) 0%, var(--cyan) 100%);
     display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(124,58,237,0.5); flex-shrink: 0;
   }
   .kinova-wordmark {
-    font-size: 17px; font-weight: 600; letter-spacing: -0.02em;
+    font-size: 16px; font-weight: 600; letter-spacing: -0.02em;
     background: linear-gradient(90deg, var(--text-primary) 0%, rgba(240,240,255,0.5) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
-  .controller-label {
-    font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase;
-    font-family: var(--mono); padding: 4px 10px; border: 1px solid var(--glass-border); border-radius: 100px; backdrop-filter: blur(16px);
-  }
   .ws-pill {
-    display: flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 100px;
+    display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 100px;
     background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(16px);
     font-family: var(--mono); font-size: 10px; color: var(--text-secondary);
   }
-  .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
+  .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
   .ws-dot.connected { background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: ws-pulse 2s infinite; }
-  .ws-dot.error { background: var(--red); }
   @keyframes ws-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-  #state-badge { position: fixed; top: 50%; left: 50%; z-index: 30; transform: translate(-50%, -50%) translateY(-155px); pointer-events: none; }
-  .state-pill {
-    display: flex; align-items: center; gap: 10px; padding: 10px 22px; border-radius: 100px;
-    backdrop-filter: blur(32px); border: 1px solid var(--glass-border); background: rgba(10,10,18,0.78);
-    font-size: 13px; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; transition: all 0.3s;
+  /* Incoming Stage File Banner */
+  #stage-grab-banner {
+    position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 35;
+    width: calc(100vw - 28px); max-width: 380px; padding: 10px 14px; border-radius: 16px;
+    background: linear-gradient(135deg, rgba(6,182,212,0.22), rgba(124,58,237,0.26));
+    border: 1px solid rgba(6,182,212,0.55); backdrop-filter: blur(24px);
+    display: none; align-items: center; justify-content: space-between; gap: 10px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.65);
   }
-  .state-icon { font-size: 16px; }
+  #stage-grab-banner.show { display: flex; }
+  .grab-info { min-width: 0; flex: 1; }
+  .grab-kicker { font-family: var(--mono); font-size: 9px; color: var(--cyan); text-transform: uppercase; letter-spacing: .06em; }
+  .grab-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grab-btn {
+    padding: 7px 12px; border-radius: 10px; background: var(--cyan); color: #030305;
+    font-size: 11px; font-weight: 700; text-decoration: none; white-space: nowrap;
+  }
+
+  #state-badge { position: fixed; top: 44%; left: 50%; z-index: 30; transform: translate(-50%, -50%) translateY(-130px); pointer-events: none; }
+  .state-pill {
+    display: flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 100px;
+    backdrop-filter: blur(32px); border: 1px solid var(--glass-border); background: rgba(10,10,18,0.82);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap;
+  }
   .state-name { font-family: var(--mono); }
   .state-idle     .state-pill { border-color: rgba(255,255,255,0.1); color: var(--text-secondary); }
-  .state-holding  .state-pill { border-color: rgba(245,158,11,0.5); color: var(--amber); box-shadow: 0 0 24px rgba(245,158,11,0.15); }
-  .state-charged  .state-pill { border-color: rgba(16,185,129,0.6); color: var(--emerald); box-shadow: 0 0 32px rgba(16,185,129,0.25); }
-  .state-throw    .state-pill { border-color: rgba(124,58,237,0.6); color: #c4b5fd; box-shadow: 0 0 40px rgba(124,58,237,0.3); }
+  .state-holding  .state-pill { border-color: rgba(245,158,11,0.5); color: var(--amber); }
+  .state-charged  .state-pill { border-color: rgba(16,185,129,0.6); color: var(--emerald); box-shadow: 0 0 28px rgba(16,185,129,0.25); }
+  .state-throw    .state-pill { border-color: rgba(124,58,237,0.6); color: #c4b5fd; }
   .state-cooldown .state-pill { border-color: rgba(239,68,68,0.4); color: var(--red); }
 
   #hold-arc-container { position: fixed; z-index: 25; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-  #hold-arc-container canvas { display: block; }
-
   #asset-tether { position: fixed; z-index: 26; pointer-events: none; display: none; transform: translate(-50%, -50%); }
   .tether-card {
-    width: 88px; border-radius: 14px; background: rgba(10,10,20,0.85); backdrop-filter: blur(28px);
+    width: 84px; border-radius: 14px; background: rgba(10,10,20,0.88); backdrop-filter: blur(28px);
     border: 1px solid rgba(255,255,255,0.12); overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    animation: tether-float 2s ease-in-out infinite;
   }
-  @keyframes tether-float { 0%,100%{ transform: translateY(0) scale(1); } 50%{ transform: translateY(-5px) scale(1.03); } }
-  .tether-preview { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; position: relative; overflow: hidden; }
+  .tether-preview { height: 58px; display: flex; align-items: center; justify-content: center; font-size: 26px; position: relative; }
   .tether-preview-bg { position: absolute; inset: 0; opacity: 0.18; }
-  .tether-preview-icon { position: relative; z-index: 1; }
-  .tether-name {
-    padding: 5px 7px 7px; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
-    color: var(--text-secondary); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .tether-type-tag {
-    position: absolute; top: 5px; right: 5px; z-index: 2; font-family: var(--mono); font-size: 7px;
-    letter-spacing: 0.06em; padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.5);
-  }
-  #asset-tether.charged .tether-card {
-    border-color: rgba(16,185,129,0.7); box-shadow: 0 0 28px rgba(16,185,129,0.4), 0 8px 32px rgba(0,0,0,0.5);
-  }
+  .tether-name { padding: 4px 6px 6px; font-size: 9px; font-weight: 600; color: var(--text-secondary); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  #velocity-meter { position: fixed; right: 22px; top: 50%; z-index: 20; transform: translateY(-50%); width: 40px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  .vel-bar-wrap { width: 4px; height: 180px; border-radius: 2px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); position: relative; overflow: hidden; }
-  .vel-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, var(--emerald), var(--cyan)); border-radius: 2px; transition: height 0.08s linear; height: 0%; }
-  .vel-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.05em; writing-mode: vertical-rl; text-transform: uppercase; }
+  #velocity-meter { position: fixed; right: 14px; top: 45%; z-index: 20; transform: translateY(-50%); width: 28px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .vel-bar-wrap { width: 4px; height: 140px; border-radius: 2px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); position: relative; overflow: hidden; }
+  .vel-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, var(--emerald), var(--cyan)); height: 0%; }
+  .vel-label { font-family: var(--mono); font-size: 8px; color: var(--text-dim); writing-mode: vertical-rl; text-transform: uppercase; }
 
-  #telemetry-panel { position: fixed; bottom: 196px; left: 20px; z-index: 20; display: flex; flex-direction: column; gap: 6px; width: 188px; }
-  .tele-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; border-radius: 9px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(24px); }
-  .tele-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
-  .tele-val { font-family: var(--mono); font-size: 11px; color: var(--text-primary); font-weight: 500; }
+  #telemetry-panel { position: fixed; bottom: 185px; left: 16px; z-index: 20; display: flex; flex-direction: column; gap: 5px; width: 165px; }
+  .tele-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(24px); }
+  .tele-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+  .tele-val { font-family: var(--mono); font-size: 10px; color: var(--text-primary); }
   .tele-val.green { color: var(--emerald); }
 
-  #gesture-guide { position: fixed; bottom: 196px; right: 56px; z-index: 20; display: flex; flex-direction: column; gap: 5px; width: 174px; }
-  .guide-item { display: flex; align-items: center; gap: 10px; padding: 7px 11px; border-radius: 9px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(24px); font-size: 11px; color: var(--text-secondary); transition: border-color 0.3s, color 0.3s; }
+  #gesture-guide { position: fixed; bottom: 185px; right: 48px; z-index: 20; display: flex; flex-direction: column; gap: 5px; width: 170px; }
+  .guide-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(24px); font-size: 10px; color: var(--text-secondary); }
   .guide-item.active { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
-  .guide-icon { font-size: 14px; width: 20px; text-align: center; }
 
-  #asset-dock-wrap { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
-  #dock-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-  #dock-label::before, #dock-label::after { content: ''; flex: 1; max-width: 48px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1)); }
-  #dock-label::after { background: linear-gradient(270deg, transparent, rgba(255,255,255,0.1)); }
+  @media (max-width: 640px) {
+    #telemetry-panel, #gesture-guide { display: none; }
+  }
+
+  /* Responsive 4-Card Dock (Fits 100% on any Mobile Screen) */
+  #asset-dock-wrap { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; padding: 0 10px 14px; }
+  #dock-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
 
   #asset-dock {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 22px;
-    background: rgba(8,8,16,0.72); border: 1px solid rgba(255,255,255,0.09);
-    backdrop-filter: blur(32px) saturate(1.4); box-shadow: 0 8px 48px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06) inset; position: relative;
-  }
-  #asset-dock::before {
-    content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 40%, rgba(255,255,255,0.14) 60%, transparent); border-radius: 100px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 460px;
+    padding: 8px;
+    border-radius: 20px;
+    background: rgba(8,8,16,0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(32px);
+    box-shadow: 0 8px 48px rgba(0,0,0,0.7);
   }
 
   .asset-card {
-    position: relative; border-radius: 16px; cursor: pointer; width: 120px; background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07); overflow: hidden;
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), border-color 0.25s, box-shadow 0.25s; will-change: transform;
+    position: relative; border-radius: 13px; cursor: pointer; width: 100%; min-width: 0;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   }
-  .asset-card:hover { transform: translateY(-4px) scale(1.03); border-color: rgba(255,255,255,0.14); }
   .asset-card.active {
     border-color: var(--card-accent, var(--cyan));
-    box-shadow: 0 0 0 1px var(--card-accent, var(--cyan)), 0 0 20px rgba(var(--card-accent-rgb, 6,182,212), 0.35), 0 8px 32px rgba(0,0,0,0.5);
-    transform: translateY(-6px) scale(1.045);
+    box-shadow: 0 0 14px rgba(var(--card-accent-rgb, 6,182,212), 0.35);
+    transform: translateY(-3px);
   }
-  .asset-card.active::after {
-    content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 2px;
-    background: var(--card-accent, var(--cyan)); border-radius: 0 0 2px 2px; box-shadow: 0 0 10px var(--card-accent, var(--cyan));
-  }
-  .asset-preview { height: 76px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-  .asset-preview-bg { position: absolute; inset: 0; opacity: 0; transition: opacity 0.4s; }
-  .asset-card.active .asset-preview-bg { opacity: 0.22; }
-  .asset-emoji { font-size: 30px; position: relative; z-index: 1; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition: transform 0.3s; }
-  .asset-card.active .asset-emoji { transform: scale(1.12); }
-  .asset-shimmer {
-    position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
-    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%); transform: translateX(-100%);
-  }
-  .asset-card.active .asset-shimmer { opacity: 1; animation: shimmer-sweep 2.4s ease-in-out infinite 0.2s; }
-  @keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 60%,100% { transform: translateX(200%); } }
-
-  .asset-info { padding: 8px 10px 10px; border-top: 1px solid rgba(255,255,255,0.05); }
-  .asset-name { font-size: 11px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .asset-preview { height: 50px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .asset-preview-bg { position: absolute; inset: 0; opacity: 0.18; }
+  .asset-emoji { font-size: 22px; position: relative; z-index: 1; }
+  .asset-info { padding: 5px 6px 6px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
+  .asset-name { font-size: 10px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .asset-type-tag {
-    display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 7px; border-radius: 100px;
-    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.06em; color: var(--card-accent, var(--cyan));
-    background: rgba(var(--card-accent-rgb, 6,182,212), 0.1); border: 1px solid rgba(var(--card-accent-rgb, 6,182,212), 0.2);
+    display: inline-block; margin-top: 2px; padding: 1px 5px; border-radius: 100px;
+    font-family: var(--mono); font-size: 7.5px; color: var(--card-accent, var(--cyan));
+    background: rgba(var(--card-accent-rgb, 6,182,212), 0.12);
   }
-  .asset-type-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--card-accent, var(--cyan)); flex-shrink: 0; }
 
-  #dock-indicators { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
-  .dock-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: all 0.3s; }
-  .dock-dot.active { background: var(--active-color, var(--cyan)); box-shadow: 0 0 6px var(--active-color, var(--cyan)); transform: scale(1.3); }
+  /* Invisible Mobile-Compatible File Input Overlay */
+  #phone-file-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+  }
 
   #active-asset-banner {
-    display: flex; align-items: center; gap: 10px; padding: 7px 16px; border-radius: 100px; margin-bottom: 10px;
-    background: rgba(10,10,20,0.75); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px);
-    font-size: 12px; font-weight: 500; transition: border-color 0.3s; opacity: 0;
+    display: flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 100px; margin-bottom: 6px;
+    background: rgba(10,10,20,0.85); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px);
+    font-size: 11px; font-weight: 500; opacity: 0; max-width: calc(100vw - 24px);
   }
   #active-asset-banner.visible { opacity: 1; }
-  #banner-emoji { font-size: 15px; }
-  #banner-name { color: var(--text-primary); }
-  #banner-type { font-family: var(--mono); font-size: 10px; color: var(--text-dim); padding: 2px 7px; border-radius: 100px; background: rgba(255,255,255,0.05); }
-  #banner-ready { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--emerald); margin-left: auto; opacity: 0; transition: opacity 0.3s; }
+  #banner-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  #banner-ready { font-family: var(--mono); font-size: 10px; color: var(--emerald); opacity: 0; }
   #banner-ready.show { opacity: 1; }
-  .banner-ready-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: ws-pulse 1.5s infinite; }
 
   #connect-panel {
     position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
     background: rgba(3,3,5,0.96); backdrop-filter: blur(32px);
   }
   .connect-card {
-    width: 380px; padding: 40px; background: rgba(10,10,18,0.92); border: 1px solid var(--glass-border); border-radius: 22px;
-    display: flex; flex-direction: column; gap: 22px; box-shadow: 0 40px 80px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.06) inset;
+    width: 350px; max-width: calc(100vw - 32px); padding: 30px; background: rgba(10,10,18,0.94);
+    border: 1px solid var(--glass-border); border-radius: 22px; display: flex; flex-direction: column; gap: 18px;
   }
-  .connect-title  { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
-  .connect-subtitle { font-size: 13px; color: var(--text-dim); }
-  .connect-assets { display: flex; gap: 8px; }
-  .connect-asset-btn {
-    flex: 1; padding: 10px 8px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-    cursor: pointer; text-align: center; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-    display: flex; flex-direction: column; align-items: center; gap: 5px;
-  }
-  .connect-asset-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); }
-  .connect-asset-btn.selected { border-color: var(--btn-accent); box-shadow: 0 0 14px rgba(var(--btn-accent-rgb),0.3); background: rgba(var(--btn-accent-rgb),0.07); }
-  .connect-asset-emoji { font-size: 22px; }
-  .connect-asset-name { font-size: 9px; color: var(--text-dim); letter-spacing: 0.03em; font-weight: 500; }
+  .connect-title  { font-size: 20px; font-weight: 600; }
+  .connect-subtitle { font-size: 12px; color: var(--text-dim); }
   .connect-input {
-    width: 100%; padding: 12px 16px; border-radius: 11px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-    color: var(--text-primary); font-family: var(--mono); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; outline: none; transition: border-color 0.2s;
+    width: 100%; padding: 12px 14px; border-radius: 11px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+    color: var(--text-primary); font-family: var(--mono); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; outline: none;
   }
-  .connect-input:focus { border-color: rgba(124,58,237,0.5); }
   .connect-btn {
     width: 100%; padding: 13px; border-radius: 11px; background: linear-gradient(135deg, var(--violet) 0%, #5b21b6 100%);
-    color: white; font-size: 14px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 8px 24px rgba(124,58,237,0.4);
-    transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 0.03em;
+    color: white; font-size: 14px; font-weight: 600; border: none; cursor: pointer;
   }
 
   #cooldown-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; height: 3px; background: linear-gradient(90deg, var(--violet) 0%, var(--cyan) 100%); transform-origin: left; transform: scaleX(0); opacity: 0; }
-  #throw-flash { position: fixed; inset: 0; z-index: 45; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, rgba(16,185,129,0.22) 0%, transparent 70%); opacity: 0; }
   #throw-particles { position: fixed; inset: 0; z-index: 44; pointer-events: none; }
 </style>
 </head>
@@ -227,36 +205,20 @@
 <div id="connect-panel">
   <div class="connect-card">
     <div>
-      <div class="kinova-logo" style="margin-bottom:16px">
+      <div class="kinova-logo" style="margin-bottom:12px">
         <div class="kinova-logo-mark">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
             <path d="M4 14 L9 4 L14 14" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="9" cy="9" r="2" fill="white" opacity="0.6"/>
           </svg>
         </div>
         <span class="kinova-wordmark">Kinova</span>
       </div>
       <p class="connect-title">Gesture Controller</p>
-      <p class="connect-subtitle" style="margin-top:4px">Configure your session below</p>
+      <p class="connect-subtitle" style="margin-top:4px">Room auto-detected from QR / link</p>
     </div>
 
     <div>
-      <p style="font-size:11px;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;">Select Asset to Transfer</p>
-      <div class="connect-assets" id="connect-assets">
-        <button class="connect-asset-btn selected" data-idx="0" style="--btn-accent:#06b6d4;--btn-accent-rgb:6,182,212">
-          <span class="connect-asset-emoji">💎</span><span class="connect-asset-name">Chronos</span>
-        </button>
-        <button class="connect-asset-btn" data-idx="1" style="--btn-accent:#a78bfa;--btn-accent-rgb:167,139,250">
-          <span class="connect-asset-emoji">📄</span><span class="connect-asset-name">Horizon</span>
-        </button>
-        <button class="connect-asset-btn" data-idx="2" style="--btn-accent:#f59e0b;--btn-accent-rgb:245,158,11">
-          <span class="connect-asset-emoji">🖼️</span><span class="connect-asset-name">Aura</span>
-        </button>
-      </div>
-    </div>
-
-    <div>
-      <p style="font-size:11px;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Room Code</p>
+      <p style="font-size:11px;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">Room Code</p>
       <input class="connect-input" id="room-input" placeholder="ALPHA" maxlength="16" />
     </div>
     <button class="connect-btn" id="connect-btn">Initialize Session →</button>
@@ -272,26 +234,31 @@
 <div class="overlay-fx" id="vignette"></div>
 <div class="overlay-fx" id="top-fade"></div>
 <div class="overlay-fx" id="bottom-fade"></div>
-<div class="ambient" style="width:520px;height:520px;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(124,58,237,0.11) 0%,transparent 70%);"></div>
-<div id="throw-flash"></div>
 <canvas id="throw-particles"></canvas>
 <div id="cooldown-bar"></div>
 
 <div id="hud-top">
   <div class="kinova-logo">
     <div class="kinova-logo-mark">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
         <path d="M4 14 L9 4 L14 14" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="9" cy="9" r="2" fill="white" opacity="0.6"/>
       </svg>
     </div>
     <span class="kinova-wordmark">Kinova</span>
   </div>
-  <span class="controller-label">Controller</span>
-  <div style="display:flex;align-items:center;gap:8px;">
+  <div style="display:flex;align-items:center;gap:6px;">
     <div class="ws-pill"><div class="ws-dot" id="ws-dot"></div><span id="ws-label">Offline</span></div>
     <div class="ws-pill"><span style="color:var(--text-dim)">Room</span><span id="room-label" style="color:var(--text-primary);font-weight:500">—</span></div>
   </div>
+</div>
+
+<!-- Incoming File from Laptop Stage -->
+<div id="stage-grab-banner">
+  <div class="grab-info">
+    <div class="grab-kicker">🧲 On Display Stage · Pull Back to Grab</div>
+    <div class="grab-name" id="grab-file-name">report.pdf</div>
+  </div>
+  <a id="grab-dl-link" href="#" download class="grab-btn">⬇️ Grab</a>
 </div>
 
 <div id="state-badge" class="state-idle">
@@ -303,7 +270,6 @@
     <div class="tether-preview">
       <div class="tether-preview-bg" id="tether-bg"></div>
       <span class="tether-preview-icon" id="tether-icon">💎</span>
-      <span class="tether-type-tag" id="tether-type-tag">3D</span>
     </div>
     <div class="tether-name" id="tether-name">Chronos Nebula</div>
   </div>
@@ -328,54 +294,62 @@
 <div id="gesture-guide">
   <div class="guide-item" id="g-idle"><span class="guide-icon">👁</span><span>Open hand — scan</span></div>
   <div class="guide-item" id="g-hold"><span class="guide-icon">🤏</span><span>Pinch — hold 0.35s</span></div>
-  <div class="guide-item" id="g-throw"><span class="guide-icon">🚀</span><span>Release + flick</span></div>
+  <div class="guide-item" id="g-throw"><span class="guide-icon">🚀</span><span>Flick forward / Pull back</span></div>
 </div>
 
 <div id="asset-dock-wrap">
   <div id="active-asset-banner">
-    <span id="banner-emoji">💎</span><span id="banner-name">Chronos Nebula</span><span id="banner-type">3D_MODEL</span>
-    <div id="banner-ready"><div class="banner-ready-dot"></div><span>Ready</span></div>
+    <span id="banner-emoji">💎</span><span id="banner-name">Chronos Nebula</span><span id="banner-type" style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">3D</span>
+    <div id="banner-ready"><span>● Ready</span></div>
   </div>
-  <div id="dock-label">Asset Dock</div>
+  <div id="dock-label">Tap Card to Select or Upload File</div>
   <div id="asset-dock">
     <div class="asset-card active" data-idx="0" style="--card-accent:#06b6d4;--card-accent-rgb:6,182,212">
       <div class="asset-preview">
         <div class="asset-preview-bg" style="background:radial-gradient(circle,#06b6d4,transparent)"></div>
-        <span class="asset-emoji">💎</span><div class="asset-shimmer"></div>
+        <span class="asset-emoji">💎</span>
       </div>
-      <div class="asset-info"><div class="asset-name">Chronos Nebula</div><div class="asset-type-tag"><div class="asset-type-dot"></div>3D_MODEL</div></div>
+      <div class="asset-info"><div class="asset-name">Chronos</div><div class="asset-type-tag">3D</div></div>
     </div>
     <div class="asset-card" data-idx="1" style="--card-accent:#a78bfa;--card-accent-rgb:167,139,250">
       <div class="asset-preview">
         <div class="asset-preview-bg" style="background:radial-gradient(circle,#a78bfa,transparent)"></div>
-        <span class="asset-emoji">📄</span><div class="asset-shimmer"></div>
+        <span class="asset-emoji">📄</span>
       </div>
-      <div class="asset-info"><div class="asset-name">Project Horizon</div><div class="asset-type-tag"><div class="asset-type-dot"></div>DOCUMENT</div></div>
+      <div class="asset-info"><div class="asset-name">Horizon</div><div class="asset-type-tag">DOC</div></div>
     </div>
     <div class="asset-card" data-idx="2" style="--card-accent:#f59e0b;--card-accent-rgb:245,158,11">
       <div class="asset-preview">
         <div class="asset-preview-bg" style="background:radial-gradient(circle,#f59e0b,transparent)"></div>
-        <span class="asset-emoji">🖼️</span><div class="asset-shimmer"></div>
+        <span class="asset-emoji">🖼️</span>
       </div>
-      <div class="asset-info"><div class="asset-name">Aura Artifact</div><div class="asset-type-tag"><div class="asset-type-dot"></div>HOLOGRAM</div></div>
+      <div class="asset-info"><div class="asset-name">Aura</div><div class="asset-type-tag">HOLO</div></div>
     </div>
-  </div>
-  <div id="dock-indicators">
-    <div class="dock-dot active" data-idx="0" style="--active-color:#06b6d4"></div>
-    <div class="dock-dot" data-idx="1" style="--active-color:#a78bfa"></div>
-    <div class="dock-dot" data-idx="2" style="--active-color:#f59e0b"></div>
+    <!-- 4th Card: Direct Mobile File Picker -->
+    <div class="asset-card" id="custom-file-card" data-idx="3" style="--card-accent:#10b981;--card-accent-rgb:16,185,129; border-color: rgba(16,185,129,0.4);">
+      <input type="file" id="phone-file-input" />
+      <div class="asset-preview">
+        <div class="asset-preview-bg" style="background:radial-gradient(circle,#10b981,transparent)"></div>
+        <span class="asset-emoji" id="custom-file-emoji">➕</span>
+      </div>
+      <div class="asset-info">
+        <div class="asset-name" id="custom-file-name">Upload</div>
+        <div class="asset-type-tag" id="custom-file-tag">FILE</div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 const ASSETS = [
-  { id: 'chronos_nebula', name: 'Chronos Nebula', type: '3D_MODEL', emoji: '💎', color: '#06b6d4', colorRgb: '6,182,212', typeShort: '3D' },
-  { id: 'project_horizon', name: 'Project Horizon', type: 'DOCUMENT', emoji: '📄', color: '#a78bfa', colorRgb: '167,139,250', typeShort: 'DOC' },
-  { id: 'aura_artifact', name: 'Aura Artifact', type: 'HOLOGRAM', emoji: '🖼️', color: '#f59e0b', colorRgb: '245,158,11', typeShort: 'HOLO' }
+  { id: 'chronos_nebula', name: 'Chronos Nebula', type: '3D_MODEL', emoji: '💎', color: '#06b6d4', colorRgb: '6,182,212' },
+  { id: 'project_horizon', name: 'Project Horizon', type: 'DOCUMENT', emoji: '📄', color: '#a78bfa', colorRgb: '167,139,250' },
+  { id: 'aura_artifact', name: 'Aura Artifact', type: 'HOLOGRAM', emoji: '🖼️', color: '#f59e0b', colorRgb: '245,158,11' },
+  { id: 'custom_file', name: 'Upload File', type: 'DOCUMENT', emoji: '➕', color: '#10b981', colorRgb: '16,185,129', file_url: null, file_size: '' }
 ];
 let activeAssetIdx = 0;
+let sharedStageFile = null;
 
-// Corrected Regex Room Extraction (prevents Django string equality bug)
 const DJANGO_ROOM = '{{ room_code }}';
 let ROOM_CODE = (/^[A-Za-z0-9_-]{1,32}$/.test(DJANGO_ROOM)
   ? DJANGO_ROOM
@@ -392,86 +366,60 @@ function ensureAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
-
 function playBuzz(freq, dur = 0.15) {
-  ensureAudio();
-  const ctx = audioCtx;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(freq, ctx.currentTime);
-  g.gain.setValueAtTime(0.1, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-  osc.connect(g);
-  g.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + dur);
+  try {
+    ensureAudio();
+    const ctx = audioCtx, osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    g.gain.setValueAtTime(0.1, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch (e) {}
 }
 
-function playHoldBuzz() {
-  ensureAudio();
-  const ctx = audioCtx;
-  const osc = ctx.createOscillator(), g = ctx.createGain();
-  osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, ctx.currentTime);
-  osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.35);
-  g.gain.setValueAtTime(0.07, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-  osc.connect(g); g.connect(ctx.destination);
-  osc.start(); osc.stop(ctx.currentTime + 0.35);
-}
+// ═══════════════════════════════════════════════════════════
+// PHONE FILE UPLOAD HANDLER
+// ═══════════════════════════════════════════════════════════
+document.getElementById('phone-file-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-function playChargedBuzz() {
-  ensureAudio();
-  const ctx = audioCtx;
-  const baseFreqs = { '3D_MODEL': [60,120,180], 'DOCUMENT': [80,160,240], 'HOLOGRAM': [55,110,165] };
-  const freqs = baseFreqs[ASSETS[activeAssetIdx].type] || [60,120,180];
-  freqs.forEach((f, i) => {
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'sine'; o.frequency.setValueAtTime(f, ctx.currentTime);
-    g.gain.setValueAtTime(0.06, ctx.currentTime + i * 0.04);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4 + i * 0.04);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(ctx.currentTime + i * 0.04); o.stop(ctx.currentTime + 0.5 + i * 0.04);
-  });
-}
+  document.getElementById('custom-file-name').textContent = 'Wait…';
+  document.getElementById('custom-file-emoji').textContent = '⏳';
 
-function playThrowSound() {
-  ensureAudio();
-  const ctx = audioCtx;
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0.5, ctx.currentTime);
-  master.connect(ctx.destination);
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('room', ROOM_CODE);
 
-  const swoosh = ctx.createOscillator(), sg = ctx.createGain();
-  swoosh.type = 'sine'; swoosh.frequency.setValueAtTime(800, ctx.currentTime);
-  swoosh.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.25);
-  sg.gain.setValueAtTime(0.4, ctx.currentTime);
-  sg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-  swoosh.connect(sg); sg.connect(master);
-  swoosh.start(); swoosh.stop(ctx.currentTime + 0.25);
+  try {
+    const res = await fetch('/api/upload/', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.status === 'success') {
+      const isImg = /\.(png|jpg|jpeg|gif|webp)$/i.test(data.name);
+      const sizeKb = (data.size / 1024).toFixed(1) + ' KB';
 
-  [440, 880].forEach((f, i) => {
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'sine'; o.frequency.value = f;
-    g.gain.setValueAtTime(0, ctx.currentTime + 0.08 + i * 0.03);
-    g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.12 + i * 0.03);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5 + i * 0.1);
-    o.connect(g); g.connect(master);
-    o.start(ctx.currentTime + 0.08); o.stop(ctx.currentTime + 0.6);
-  });
-}
+      ASSETS[3] = {
+        id: 'custom_file',
+        name: data.name,
+        type: isImg ? 'HOLOGRAM' : 'DOCUMENT',
+        emoji: isImg ? '🖼️' : '📄',
+        color: '#10b981',
+        colorRgb: '16,185,129',
+        file_url: data.url,
+        file_size: sizeKb
+      };
 
-function playSelectClick() {
-  ensureAudio();
-  const ctx = audioCtx;
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = 'sine'; o.frequency.setValueAtTime(1200, ctx.currentTime);
-  o.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.06);
-  g.gain.setValueAtTime(0.08, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-  o.connect(g); g.connect(ctx.destination);
-  o.start(); o.stop(ctx.currentTime + 0.08);
-}
+      document.getElementById('custom-file-name').textContent = data.name;
+      document.getElementById('custom-file-emoji').textContent = ASSETS[3].emoji;
+      document.getElementById('custom-file-tag').textContent = 'READY';
+      selectAsset(3, true);
+    }
+  } catch (err) {
+    document.getElementById('custom-file-name').textContent = 'Error';
+    document.getElementById('custom-file-emoji').textContent = '⚠️';
+  }
+});
 
 const STATES = { IDLE:'IDLE', HOLDING:'HOLDING', CHARGED:'CHARGED', THROW:'THROW', COOLDOWN:'COOLDOWN', CANCEL:'CANCEL' };
 let state = STATES.IDLE;
@@ -503,68 +451,43 @@ function setState(newState) {
 }
 
 function selectAsset(idx, fromPanel) {
-  if (idx === activeAssetIdx && !fromPanel) return;
+  if (idx === 3 && !ASSETS[3].file_url) return;
   activeAssetIdx = idx;
   const asset = ASSETS[idx];
-  playSelectClick();
+  playBuzz(1100, 0.06);
 
   document.querySelectorAll('#asset-dock .asset-card').forEach((card, i) => card.classList.toggle('active', i === idx));
-  document.querySelectorAll('#dock-indicators .dock-dot').forEach((dot, i) => dot.classList.toggle('active', i === idx));
   updateTether(asset);
 
   const banner = document.getElementById('active-asset-banner');
   document.getElementById('banner-emoji').textContent = asset.emoji;
   document.getElementById('banner-name').textContent  = asset.name;
-  document.getElementById('banner-type').textContent  = asset.type;
-  banner.style.borderColor = `rgba(${asset.colorRgb},0.3)`;
-  gsap.fromTo(banner, { opacity:0, y:6 }, { opacity:1, y:0, duration:0.35, ease:'power2.out' });
+  document.getElementById('banner-type').textContent  = asset.file_url ? 'FILE' : asset.type;
+  banner.style.borderColor = `rgba(${asset.colorRgb},0.35)`;
   banner.classList.add('visible');
-
-  const activeCard = document.querySelector(`#asset-dock .asset-card[data-idx="${idx}"]`);
-  gsap.fromTo(activeCard, { y: 4, scale:0.97 }, { y:0, scale:1.045, duration:0.4, ease:'back.out(2)' });
 }
-
-document.querySelectorAll('#connect-assets .connect-asset-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#connect-assets .connect-asset-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    activeAssetIdx = parseInt(btn.dataset.idx);
-  });
-});
 
 document.querySelectorAll('#asset-dock .asset-card').forEach(card => {
   card.addEventListener('click', () => {
+    const idx = parseInt(card.dataset.idx);
+    if (idx === 3 && !ASSETS[3].file_url) return;
     if (inCooldown || state === STATES.CHARGED || state === STATES.HOLDING) return;
-    selectAsset(parseInt(card.dataset.idx));
+    selectAsset(idx);
   });
-});
-
-document.querySelectorAll('#dock-indicators .dock-dot').forEach(dot => {
-  dot.addEventListener('click', () => selectAsset(parseInt(dot.dataset.idx)));
 });
 
 function updateTether(asset) {
   document.getElementById('tether-icon').textContent = asset.emoji;
   document.getElementById('tether-name').textContent = asset.name;
-  document.getElementById('tether-type-tag').textContent = asset.typeShort;
   document.getElementById('tether-bg').style.background = `radial-gradient(circle at 40% 35%, ${asset.color}66, transparent)`;
   document.getElementById('tether-card').style.borderColor = `rgba(${asset.colorRgb},0.5)`;
-  document.getElementById('tether-card').style.boxShadow = `0 0 24px rgba(${asset.colorRgb},0.35), 0 8px 32px rgba(0,0,0,0.5)`;
 }
 
 function showTether(x, y) {
   const el = document.getElementById('asset-tether');
   el.style.display = 'block'; el.style.left = x + 'px'; el.style.top = y + 'px';
-  el.classList.toggle('charged', state === STATES.CHARGED);
 }
-
-function hideTether() {
-  const el = document.getElementById('asset-tether');
-  gsap.to(el, {
-    opacity:0, scale:0.4, duration:0.28, ease:'power2.in',
-    onComplete: () => { el.style.display = 'none'; gsap.set(el, { opacity:1, scale:1 }); }
-  });
-}
+function hideTether() { document.getElementById('asset-tether').style.display = 'none'; }
 
 const arcCanvas = document.getElementById('hold-arc-canvas');
 const arcCtx2d  = arcCanvas.getContext('2d');
@@ -574,21 +497,14 @@ function drawArc(progress, x, y) {
   arcContainer.style.left = (x - 40) + 'px'; arcContainer.style.top = (y - 40) + 'px';
   arcContainer.style.opacity = '1';
   arcCtx2d.clearRect(0, 0, 80, 80);
-  const cx = 40, cy = 40, r = 32;
-  arcCtx2d.beginPath(); arcCtx2d.arc(cx, cy, r, 0, Math.PI * 2);
-  arcCtx2d.strokeStyle = 'rgba(255,255,255,0.07)'; arcCtx2d.lineWidth = 2.5; arcCtx2d.stroke();
-
   const color = progress < 1 ? '#f59e0b' : ASSETS[activeAssetIdx].color;
-  const start = -Math.PI / 2;
-  arcCtx2d.beginPath(); arcCtx2d.arc(cx, cy, r, start, start + Math.PI * 2 * progress);
-  arcCtx2d.strokeStyle = color; arcCtx2d.lineWidth = 2.5; arcCtx2d.lineCap = 'round';
-  arcCtx2d.shadowColor = color; arcCtx2d.shadowBlur = 10; arcCtx2d.stroke(); arcCtx2d.shadowBlur = 0;
+  arcCtx2d.beginPath(); arcCtx2d.arc(40, 40, 32, -Math.PI/2, -Math.PI/2 + Math.PI * 2 * progress);
+  arcCtx2d.strokeStyle = color; arcCtx2d.lineWidth = 2.5; arcCtx2d.stroke();
 }
 function hideArc() { arcContainer.style.opacity = '0'; }
 
 const gestureCanvas = document.getElementById('gesture-canvas');
 const gCtx = gestureCanvas.getContext('2d');
-
 const CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
   [9,13],[13,14],[14,15],[15,16],[0,17],[13,17],[17,18],[18,19],[19,20],
@@ -608,60 +524,35 @@ function drawSkeleton(landmarks) {
   gCtx.clearRect(0, 0, W, H);
   const toC = lm => ({ x: lm.x * W, y: lm.y * H });
 
-  gCtx.strokeStyle = color + 'aa'; gCtx.lineWidth = 2; gCtx.shadowColor = color; gCtx.shadowBlur = 10;
+  gCtx.strokeStyle = color + 'aa'; gCtx.lineWidth = 2;
   for (const [a, b] of CONNECTIONS) {
     const pa = toC(landmarks[a]), pb = toC(landmarks[b]);
     gCtx.beginPath(); gCtx.moveTo(pa.x, pa.y); gCtx.lineTo(pb.x, pb.y); gCtx.stroke();
   }
-  gCtx.shadowBlur = 0;
-
   for (let i = 0; i < landmarks.length; i++) {
     const p = toC(landmarks[i]);
     const isKey = [4, 8].includes(i);
-    const r = isKey ? 7 : 4;
-    gCtx.beginPath(); gCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    gCtx.fillStyle = isKey ? color : color + '80';
-    gCtx.shadowColor = color; gCtx.shadowBlur = isKey ? 20 : 8;
-    gCtx.fill(); gCtx.shadowBlur = 0;
-  }
-
-  if (state === STATES.HOLDING || state === STATES.CHARGED) {
-    const thumb = toC(landmarks[4]), index = toC(landmarks[8]);
-    const grad = gCtx.createLinearGradient(thumb.x, thumb.y, index.x, index.y);
-    grad.addColorStop(0, '#f59e0b');
-    grad.addColorStop(0.5, ASSETS[activeAssetIdx].color);
-    grad.addColorStop(1, '#06b6d4');
-    gCtx.beginPath(); gCtx.moveTo(thumb.x, thumb.y); gCtx.lineTo(index.x, index.y);
-    gCtx.strokeStyle = grad; gCtx.lineWidth = 2.5; gCtx.shadowColor = ASSETS[activeAssetIdx].color; gCtx.shadowBlur = 16;
-    gCtx.stroke(); gCtx.shadowBlur = 0;
+    gCtx.beginPath(); gCtx.arc(p.x, p.y, isKey ? 7 : 4, 0, Math.PI * 2);
+    gCtx.fillStyle = isKey ? color : color + '80'; gCtx.fill();
   }
 }
 
 const pCanvas = document.getElementById('throw-particles');
 const pCtx = pCanvas.getContext('2d');
-pCanvas.width = window.innerWidth; pCanvas.height = window.innerHeight;
 let burstParticles = [];
-
 function triggerThrowBurst(originX, originY, color) {
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 60; i++) {
     const angle = Math.random() * Math.PI * 2, spd = 2 + Math.random() * 7;
-    burstParticles.push({
-      x: originX, y: originY, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd - 2,
-      life: 1.0, decay: 0.018 + Math.random() * 0.02, size: 1.5 + Math.random() * 3, color, trail: [],
-    });
+    burstParticles.push({ x: originX, y: originY, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd - 2, life: 1.0, color });
   }
+  requestAnimationFrame(animateBurst);
 }
-
 function animateBurst() {
   pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
   burstParticles = burstParticles.filter(p => p.life > 0);
   for (const p of burstParticles) {
-    p.trail.push({ x: p.x, y: p.y });
-    if (p.trail.length > 5) p.trail.shift();
-    p.x += p.vx; p.y += p.vy; p.vy += 0.08;
-    p.vx *= 0.97; p.vy *= 0.97;
-    p.life -= p.decay;
-    pCtx.beginPath(); pCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    p.x += p.vx; p.y += p.vy; p.life -= 0.025;
+    pCtx.beginPath(); pCtx.arc(p.x, p.y, 3 * p.life, 0, Math.PI * 2);
     pCtx.fillStyle = p.color; pCtx.fill();
   }
   if (burstParticles.length > 0) requestAnimationFrame(animateBurst);
@@ -673,8 +564,7 @@ function onResults(results) {
   if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
     gCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
     if (state !== STATES.COOLDOWN) setState(STATES.IDLE);
-    hideArc(); hideTether();
-    prevIndexPos = null; return;
+    hideArc(); hideTether(); prevIndexPos = null; return;
   }
 
   const landmarks = results.multiHandLandmarks[0];
@@ -705,7 +595,7 @@ function onResults(results) {
     if (isPinching) {
       holdStartTime = performance.now();
       setState(STATES.HOLDING);
-      playHoldBuzz();
+      playBuzz(95, 0.35);
     }
     return;
   }
@@ -723,7 +613,7 @@ function onResults(results) {
     drawArc(holdProgress, mx, my);
     if (holdProgress >= 1) {
       setState(STATES.CHARGED);
-      playChargedBuzz();
+      playBuzz(440, 0.25);
     }
     return;
   }
@@ -740,26 +630,15 @@ function onResults(results) {
     if (!isPinching) {
       const flickMag = Math.sqrt(flickY * flickY + flickZ * flickZ);
 
-      // Forward/Upward flick -> THROW
       if (flickMag > FLICK_THRESHOLD && (flickY > 0.02 || flickZ > 0.02)) {
         doThrow({ flickY, flickZ, pinchDist, originX: wx, originY: wy });
       }
-      // Backward/Downward pull -> PULL BACK
       else if (flickMag > FLICK_THRESHOLD && (flickY < -0.02 || flickZ < -0.02)) {
         doPull();
       }
-      // Gentle drop cancel
       else {
         setState(STATES.CANCEL);
-        const tetherEl = document.getElementById('asset-tether');
-        gsap.to(tetherEl, {
-          y: '+=80', opacity: 0, scale: 0.6, duration: 0.25, ease: 'power2.in',
-          onComplete: () => {
-            tetherEl.style.display = 'none';
-            gsap.set(tetherEl, { y: 0, opacity: 1, scale: 1 });
-          }
-        });
-        hideArc();
+        hideTether(); hideArc();
         setTimeout(() => { if (state === STATES.CANCEL) setState(STATES.IDLE); }, 400);
       }
     }
@@ -781,37 +660,26 @@ function doThrow({ flickY, flickZ, pinchDist, originX, originY }) {
     payload: {
       room: ROOM_CODE, asset_id: asset.id, asset_name: asset.name,
       asset_type: asset.type, asset_color: asset.color, timestamp: Date.now(),
-      velocity, flickY: parseFloat(flickY.toFixed(4)), flickZ: parseFloat(flickZ.toFixed(4)),
-      pinchDist: parseFloat(pinchDist.toFixed(3)), token,
+      velocity, token,
+      file_url: asset.file_url || null,
+      file_size: asset.file_size || '',
+      sender: 'CONTROLLER'
     }
   };
 
   sendWS(packet);
-  playThrowSound();
+  playBuzz(780, 0.25);
   setState(STATES.THROW);
 
-  const flash = document.getElementById('throw-flash');
-  flash.style.background = `radial-gradient(ellipse at 50% 50%, rgba(${asset.colorRgb},0.25) 0%, transparent 70%)`;
-  gsap.fromTo(flash, { opacity:0 }, { opacity:1, duration:0.08, onComplete: () => gsap.to(flash, { opacity:0, duration:0.5 }) });
-
   triggerThrowBurst(originX || window.innerWidth / 2, originY || window.innerHeight / 2, asset.color);
-  requestAnimationFrame(animateBurst);
-
-  const tetherEl = document.getElementById('asset-tether');
-  gsap.to(tetherEl, {
-    y: -220, opacity:0, scale:0.2, duration:0.38, ease:'power2.in',
-    onComplete: () => { tetherEl.style.display = 'none'; gsap.set(tetherEl, { y:0, opacity:1, scale:1 }); }
-  });
-  hideArc();
+  hideTether(); hideArc();
 
   inCooldown = true; holdProgress = 0; flickVelY = 0; flickVelZ = 0;
   setState(STATES.COOLDOWN);
 
   const bar = document.getElementById('cooldown-bar');
-  bar.style.background = `linear-gradient(90deg, ${asset.color} 0%, var(--cyan) 100%)`;
   gsap.set(bar, { opacity:1, scaleX:1 });
   gsap.to(bar, { scaleX:0, duration:COOLDOWN_MS/1000, ease:'linear', onComplete: () => gsap.set(bar, { opacity:0 }) });
-
   setTimeout(() => { inCooldown = false; setState(STATES.IDLE); }, COOLDOWN_MS);
 }
 
@@ -820,45 +688,29 @@ function doPull() {
   playBuzz(320, 0.2);
   setState(STATES.COOLDOWN);
 
-  const packet = {
+  sendWS({
     action: 'PULL',
-    payload: {
-      room: ROOM_CODE,
-      timestamp: Date.now(),
-      target_asset: ASSETS[activeAssetIdx].id
-    }
-  };
+    payload: { room: ROOM_CODE, timestamp: Date.now() }
+  });
 
-  sendWS(packet);
+  if (sharedStageFile && sharedStageFile.file_url) {
+    const a = document.createElement('a');
+    a.href = sharedStageFile.file_url;
+    a.download = sharedStageFile.asset_name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    document.getElementById('stage-grab-banner').classList.remove('show');
+    sharedStageFile = null;
+  }
 
   const badge = document.getElementById('state-badge');
   badge.querySelector('.state-name').textContent = "PULLED BACK";
   badge.querySelector('.state-icon').textContent = "🧲";
 
-  const flash = document.getElementById('throw-flash');
-  flash.style.background = 'radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.35) 0%, transparent 70%)';
-  gsap.fromTo(flash, { opacity: 0 }, { opacity: 1, duration: 0.1, onComplete: () => gsap.to(flash, { opacity: 0, duration: 0.4 }) });
-
-  const tetherEl = document.getElementById('asset-tether');
-  tetherEl.style.display = 'block';
-  gsap.fromTo(tetherEl,
-    { y: -100, opacity: 0, scale: 1.5 },
-    {
-      y: window.innerHeight - 120, opacity: 1, scale: 0.5, duration: 0.45, ease: 'power2.in',
-      onComplete: () => {
-        tetherEl.style.display = 'none';
-        gsap.set(tetherEl, { y: 0, opacity: 1, scale: 1 });
-      }
-    }
-  );
-
-  hideArc();
+  hideTether(); hideArc();
   inCooldown = true; holdProgress = 0; flickVelY = 0; flickVelZ = 0;
-
-  setTimeout(() => {
-    inCooldown = false;
-    setState(STATES.IDLE);
-  }, COOLDOWN_MS);
+  setTimeout(() => { inCooldown = false; setState(STATES.IDLE); }, COOLDOWN_MS);
 }
 
 let ws = null, reconnectTimer = null;
@@ -866,6 +718,20 @@ function connect() {
   const url = `${WS_PROTOCOL}${WS_HOST}/ws/kinova/${ROOM_CODE}/`;
   try { ws = new WebSocket(url); } catch(e) { scheduleReconnect(); return; }
   ws.onopen  = () => setWsStatus(true);
+  ws.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg && msg.action === 'STAGE_FILE_READY' && msg.payload) {
+        sharedStageFile = msg.payload;
+        document.getElementById('grab-file-name').textContent = `${msg.payload.asset_name} (${msg.payload.file_size})`;
+        const link = document.getElementById('grab-dl-link');
+        link.href = msg.payload.file_url;
+        link.setAttribute('download', msg.payload.asset_name);
+        document.getElementById('stage-grab-banner').classList.add('show');
+        playBuzz(660, 0.2);
+      }
+    } catch (e) {}
+  };
   ws.onclose = () => { setWsStatus(false); scheduleReconnect(); };
   ws.onerror = () => {};
 }
@@ -907,16 +773,7 @@ document.getElementById('connect-btn').addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', e => {
-  if (e.code === 'Space' && state === STATES.CHARGED) {
-    e.preventDefault();
-    doThrow({ flickY: FLICK_THRESHOLD * 2, flickZ: 0, pinchDist: 0.03, originX: window.innerWidth/2, originY: window.innerHeight/2 });
-  }
-  if ((e.key === 'p' || e.key === 'P') && !inCooldown) {
-    doPull();
-  }
-  if (['Digit1','Digit2','Digit3'].includes(e.code) && state === STATES.IDLE) {
-    selectAsset(parseInt(e.code.slice(-1)) - 1);
-  }
+  if ((e.key === 'p' || e.key === 'P') && !inCooldown) doPull();
 });
 
 function resizeCanvas() {
@@ -928,7 +785,6 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 
 setState(STATES.IDLE);
-document.getElementById('g-idle').classList.add('active');
 updateTether(ASSETS[0]);
 document.getElementById('room-input').value = ROOM_CODE;
 </script>
