@@ -10,6 +10,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,7 +39,6 @@
   #stage canvas { display: block; }
   #burst-canvas { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
 
-  /* Ambient volumetric glows (screen-blended over the WebGL canvas) */
   .glow {
     position: fixed; border-radius: 50%; pointer-events: none; z-index: 2;
     filter: blur(70px); mix-blend-mode: screen;
@@ -103,6 +103,12 @@
     font-family: var(--mono); font-size: 11px; color: var(--text-2);
     white-space: nowrap;
   }
+  .pill-btn {
+    cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+  }
+  .pill-btn:hover {
+    border-color: rgba(6,182,212,0.5); background: rgba(6,182,212,0.12); color: var(--text);
+  }
   .pill-label { font-size: 10px; font-weight: 500; color: var(--text-3); letter-spacing: .08em; text-transform: uppercase; font-family: var(--sans); }
   .room-code { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: .1em; }
   .dot {
@@ -114,15 +120,75 @@
   .dot.retry { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; animation: blink 1s ease-in-out infinite; }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
+  /* QR Pairing Card (Top Right) */
+  #qr-card {
+    position: fixed; top: 76px; right: 32px; z-index: 22;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 12px; border-radius: 18px;
+    background: rgba(10,10,18,0.78); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transition: opacity .3s, transform .3s;
+  }
+  #qr-card.hidden-qr { opacity: 0; pointer-events: none; transform: translateY(-10px); }
+  #qrcode-box {
+    padding: 8px; background: #ffffff; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qr-caption {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-2); text-align: center;
+  }
+
+  /* Incoming / Shared File Preview & Download Card */
+  #file-modal {
+    position: fixed; top: 82px; left: 32px; z-index: 25;
+    width: 310px; max-width: calc(100vw - 40px);
+    padding: 16px; border-radius: 22px;
+    background: linear-gradient(155deg, rgba(255,255,255,0.08), rgba(10,10,18,0.85));
+    border: 1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(28px); box-shadow: 0 28px 60px rgba(0,0,0,0.65);
+    display: none; flex-direction: column; gap: 12px;
+  }
+  #file-modal.show { display: flex; }
+  #file-preview-box {
+    width: 100%; max-height: 170px; border-radius: 12px; overflow: hidden;
+    background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #file-preview-box img { width: 100%; height: 170px; object-fit: cover; display: block; }
+  .file-doc-icon { padding: 28px; font-size: 38px; text-align: center; }
+  .file-meta-row { display: flex; flex-direction: column; gap: 2px; }
+  .file-source-tag { font-family: var(--mono); font-size: 9px; color: #06b6d4; letter-spacing: .1em; text-transform: uppercase; }
+  .file-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-size { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+  .file-actions { display: flex; gap: 8px; }
+  .btn-dl {
+    flex: 1; padding: 9px 14px; border-radius: 11px; text-align: center; text-decoration: none;
+    background: linear-gradient(135deg, #06b6d4, #7c3aed); color: #fff;
+    font-size: 12px; font-weight: 600; letter-spacing: .02em;
+    box-shadow: 0 8px 20px rgba(6,182,212,0.3);
+  }
+  .btn-close-file {
+    padding: 9px 12px; border-radius: 11px; background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border); color: var(--text-2); font-size: 12px; cursor: pointer;
+  }
+
+  /* Drag & Drop Overlay */
+  #drop-zone-overlay {
+    position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center;
+    background: rgba(3,3,5,0.88); backdrop-filter: blur(20px);
+    border: 2px dashed #06b6d4; margin: 16px; border-radius: 28px; pointer-events: none;
+  }
+  #drop-zone-overlay.active { display: flex; }
+
   /* Audio unlock chip */
   #audio-chip {
     position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 21;
     display: flex; align-items: center; gap: 8px; cursor: pointer;
     padding: 7px 14px; border-radius: 100px;
     background: rgba(10,10,20,.7); border: 1px solid var(--glass-border);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2);
-    transition: opacity .4s, border-color .2s;
+    backdrop-filter: blur(20px); font-family: var(--mono); font-size: 10px;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--text-2);
   }
   #audio-chip:hover { border-color: rgba(255,255,255,.2); color: var(--text); }
   #audio-chip svg { width: 13px; height: 13px; }
@@ -135,7 +201,7 @@
   #waiting .w-title { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--text-2); font-weight: 500; }
   #waiting .w-sub { font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: .06em; }
 
-  /* Bottom stack: badge + telemetry */
+  /* Bottom stack */
   #hud-bottom {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; pointer-events: none;
     display: flex; flex-direction: column; align-items: center;
@@ -144,70 +210,49 @@
   }
   #badge-slot { position: relative; width: 100%; height: 0; }
 
-  /* Vision-Pro style frosted glass badge */
   #asset-badge {
     position: absolute; left: 50%; bottom: 16px;
     width: 380px; max-width: calc(100vw - 32px);
     padding: 16px 18px 14px; border-radius: 24px; opacity: 0; overflow: hidden;
     background: linear-gradient(145deg, rgba(var(--accent-rgb),.18) 0%, rgba(255,255,255,.05) 38%, rgba(10,10,20,.58) 100%);
     border: 1px solid rgba(255,255,255,.12);
-    backdrop-filter: blur(30px) saturate(1.6); -webkit-backdrop-filter: blur(30px) saturate(1.6);
-    box-shadow:
-      0 0 70px rgba(var(--accent-rgb),.22),
-      0 28px 60px rgba(0,0,0,.55),
-      inset 0 1px 0 rgba(255,255,255,.16),
-      inset 0 0 0 1px rgba(var(--accent-rgb),.12);
+    backdrop-filter: blur(30px) saturate(1.6);
+    box-shadow: 0 0 70px rgba(var(--accent-rgb),.22), 0 28px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.16);
   }
   #asset-badge::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),.95), transparent);
   }
-  #asset-badge::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.09) 50%, transparent 65%);
-    transform: translateX(-120%); animation: sheen 3.4s ease-in-out infinite;
-  }
-  @keyframes sheen { 0% { transform: translateX(-120%); } 55%,100% { transform: translateX(120%); } }
-
   .badge-head { display: flex; align-items: center; gap: 12px; }
   .badge-icon {
     width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    color: rgb(var(--accent-rgb));
-    background: rgba(var(--accent-rgb),.14);
-    border: 1px solid rgba(var(--accent-rgb),.35);
-    box-shadow: 0 0 22px rgba(var(--accent-rgb),.25);
+    color: rgb(var(--accent-rgb)); background: rgba(var(--accent-rgb),.14);
+    border: 1px solid rgba(var(--accent-rgb),.35); box-shadow: 0 0 22px rgba(var(--accent-rgb),.25);
   }
   .badge-icon svg { width: 22px; height: 22px; }
   .badge-titles { min-width: 0; flex: 1; }
-  .badge-kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: var(--text-3); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge-kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: var(--text-3); text-transform: uppercase; }
   .badge-name { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
   .type-tag {
     font-family: var(--mono); font-size: 10px; letter-spacing: .08em; font-weight: 500;
     padding: 4px 9px; border-radius: 100px; white-space: nowrap;
-    color: rgb(var(--accent-rgb));
-    background: rgba(var(--accent-rgb),.12);
-    border: 1px solid rgba(var(--accent-rgb),.32);
+    color: rgb(var(--accent-rgb)); background: rgba(var(--accent-rgb),.12); border: 1px solid rgba(var(--accent-rgb),.32);
   }
-
   .badge-metrics {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;
     padding-top: 12px; border-top: 1px solid rgba(255,255,255,.07);
   }
   .m-label { display: block; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
   .m-val { display: block; margin-top: 3px; font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }
-  .m-val small { font-size: 10px; color: var(--text-3); margin-left: 2px; font-weight: 400; }
-
+  .m-val small { font-size: 10px; color: var(--text-3); margin-left: 2px; }
   .badge-bar { height: 3px; border-radius: 3px; background: rgba(255,255,255,.07); margin-top: 13px; overflow: hidden; }
   .badge-bar-fill {
     height: 100%; width: 0%; border-radius: 3px;
     background: linear-gradient(90deg, rgba(var(--accent-rgb),.55), rgb(var(--accent-rgb)));
-    box-shadow: 0 0 12px rgba(var(--accent-rgb),.7);
   }
   .badge-bar-label { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
 
-  /* Telemetry cards */
   #telemetry {
     display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
     margin-top: 20px; width: 100%; max-width: 980px;
@@ -216,32 +261,23 @@
     display: flex; flex-direction: column; gap: 4px;
     padding: 11px 18px; border-radius: 14px; min-width: 116px;
     background: var(--glass); border: 1px solid var(--glass-border);
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-    transition: border-color .4s, background .4s, box-shadow .4s;
+    backdrop-filter: blur(24px); transition: border-color .4s, background .4s;
   }
-  .tcard.hot {
-    border-color: rgba(var(--accent-rgb),.5);
-    background: rgba(var(--accent-rgb),.09);
-    box-shadow: 0 0 28px rgba(var(--accent-rgb),.15), inset 0 1px 0 rgba(255,255,255,.07);
-  }
+  .tcard.hot { border-color: rgba(var(--accent-rgb),.5); background: rgba(var(--accent-rgb),.09); }
   .tlabel { font-size: 10px; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); }
   .tvalue { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--text); white-space: nowrap; }
-  .tvalue small { font-size: 10px; color: var(--text-3); margin-left: 3px; font-weight: 400; }
+  .tvalue small { font-size: 10px; color: var(--text-3); margin-left: 3px; }
   .tvalue.accent { color: rgb(var(--accent-rgb)); }
   .tcard-asset { min-width: 210px; }
   .tcard-asset .row { display: flex; align-items: center; gap: 10px; }
   .tcard-asset .mini-icon { width: 18px; height: 18px; color: rgb(var(--accent-rgb)); flex-shrink: 0; }
-  .tcard-asset .mini-icon svg { width: 18px; height: 18px; display: block; }
-  .tcard-asset .aname { font-size: 14px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+  .tcard-asset .aname { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
 
   @media (max-width: 720px) {
     #hud-top { padding: 14px 16px; }
-    .wordmark { display: none; }
+    .wordmark, #qr-card { display: none; }
     .tcard { min-width: 0; flex: 1 1 calc(50% - 10px); padding: 9px 12px; }
     .tcard-asset { flex-basis: 100%; }
-    #waiting { bottom: 250px; }
-    .corner { display: none; }
   }
 </style>
 </head>
@@ -256,6 +292,14 @@
 <div id="scanlines"></div>
 <div id="vignette"></div>
 <div id="impact-flash"></div>
+
+<div id="drop-zone-overlay">
+  <div style="text-align:center">
+    <div style="font-size:42px;margin-bottom:10px">📤</div>
+    <div style="font-size:20px;font-weight:600">Drop File to Share with Controller</div>
+    <div style="font-size:12px;color:var(--text-2);font-family:var(--mono);margin-top:4px">Phone user can pull this file directly via gesture</div>
+  </div>
+</div>
 
 <svg class="corner corner-tl" width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M2 20 L2 2 L20 2" stroke="rgba(255,255,255,0.16)" stroke-width="1.5" stroke-linecap="round"/></svg>
 <svg class="corner corner-tr" width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M2 20 L2 2 L20 2" stroke="rgba(255,255,255,0.16)" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -274,14 +318,43 @@
     <span class="wordmark">Kinova</span>
   </div>
 
-  <div class="pill flex items-center gap-2">
-    <span class="pill-label">Room</span>
-    <span class="room-code" id="room-display">——————</span>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="pill">
+      <span class="pill-label">Room</span>
+      <span class="room-code" id="room-display">——————</span>
+    </div>
+    <!-- Share File from Laptop to Phone -->
+    <label class="pill pill-btn" title="Send a file from laptop to phone">
+      <span>📤 Share File</span>
+      <input type="file" id="stage-file-input" style="display:none" />
+    </label>
+    <!-- Toggle QR -->
+    <button class="pill pill-btn" id="toggle-qr-btn" type="button">📱 QR</button>
   </div>
 
   <div class="pill">
     <span class="dot" id="status-dot"></span>
     <span id="status-text">Connecting…</span>
+  </div>
+</div>
+
+<!-- QR Code Card -->
+<div id="qr-card">
+  <div id="qrcode-box"></div>
+  <div class="qr-caption">Scan on Phone<br>to Pair Controller</div>
+</div>
+
+<!-- Real File Preview & Download Card -->
+<div id="file-modal">
+  <div id="file-preview-box"></div>
+  <div class="file-meta-row">
+    <span class="file-source-tag" id="file-source-label">Received from Phone</span>
+    <div class="file-title" id="file-modal-name">document.pdf</div>
+    <div class="file-size" id="file-modal-size">240 KB</div>
+  </div>
+  <div class="file-actions">
+    <a id="file-dl-btn" href="#" download class="btn-dl">⬇️ Download File</a>
+    <button id="file-close-btn" type="button" class="btn-close-file">✕</button>
   </div>
 </div>
 
@@ -292,7 +365,7 @@
 
 <div id="waiting">
   <div class="w-title">Standing by for transfer</div>
-  <div class="w-sub">Pinch · hold · flick on the controller</div>
+  <div class="w-sub">Scan QR · Pinch · Hold · Flick on controller</div>
 </div>
 
 <!-- Bottom stack -->
@@ -338,7 +411,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════
-// CONFIG
+// CONFIG & QR GENERATION
 // ═══════════════════════════════════════════════════════════
 const DJANGO_ROOM  = '{{ room_code }}';
 const ROOM_CODE    = (/^[A-Za-z0-9_-]{1,32}$/.test(DJANGO_ROOM)
@@ -347,6 +420,21 @@ const ROOM_CODE    = (/^[A-Za-z0-9_-]{1,32}$/.test(DJANGO_ROOM)
 const WS_PROTOCOL  = location.protocol === 'https:' ? 'wss://' : 'ws://';
 const WS_HOST      = new URLSearchParams(location.search).get('ws') || location.host || 'localhost:8000';
 const WS_URL       = `${WS_PROTOCOL}${WS_HOST}/ws/kinova/${ROOM_CODE}/`;
+
+// Generate QR Code pointing directly to the mobile controller URL
+const controllerUrl = `${location.origin}/controller/${ROOM_CODE}/`;
+new QRCode(document.getElementById('qrcode-box'), {
+  text: controllerUrl,
+  width: 112,
+  height: 112,
+  colorDark: '#030305',
+  colorLight: '#ffffff',
+  correctLevel: QRCode.CorrectLevel.M
+});
+
+document.getElementById('toggle-qr-btn').addEventListener('click', () => {
+  document.getElementById('qr-card').classList.toggle('hidden-qr');
+});
 
 const ASSET_DEFS = {
   '3D_MODEL': { color: '#06b6d4', name: 'Chronos Nebula', kicker: '3D model · quantum timepiece', sub: 58, subDur: 0.9 },
@@ -388,7 +476,6 @@ function fitCamera() {
 }
 fitCamera();
 
-// Procedural environment for metallic reflections (no external HDRI)
 const envTex = (function buildEnv() {
   const env = new THREE.Scene();
   const sky = new THREE.Mesh(
@@ -417,7 +504,7 @@ const envTex = (function buildEnv() {
 scene.environment = envTex;
 
 // ═══════════════════════════════════════════════════════════
-// THEME
+// THEME & SHADERS
 // ═══════════════════════════════════════════════════════════
 const themeColor = new THREE.Color('#7c3aed');
 const fx = { spin: 0, light: 0 };
@@ -437,9 +524,6 @@ function applyTheme(hex, instant) {
   gsap.to(themeColor, { r: t.r, g: t.g, b: t.b, duration: instant ? 0 : 0.7, ease: 'power2.out', overwrite: true });
 }
 
-// ═══════════════════════════════════════════════════════════
-// MATERIAL FACTORY
-// ═══════════════════════════════════════════════════════════
 const GLSL_IRI = 'vec3 iri(float t){ return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67))); }';
 const VERT_VIEW = `
   varying vec3 vN; varying vec3 vV; varying vec3 vP;
@@ -541,8 +625,8 @@ function drawBlueprint(name, token) {
   c.globalAlpha = 0.10; c.lineWidth = 1;
   for (let x = 54; x < w - 30; x += 32) { c.beginPath(); c.moveTo(x, 150); c.lineTo(x, 402); c.stroke(); }
   for (let y = 150; y <= 402; y += 32)  { c.beginPath(); c.moveTo(54, y); c.lineTo(w - 54, y); c.stroke(); }
-  c.globalAlpha = 1; c.font = mono(600, 28); c.fillText(name.toUpperCase().slice(0, 20), 48, 90);
-  c.globalAlpha = 0.55; c.font = mono(500, 14); c.fillText('SPEC SHEET · REV 7.2 · CLASSIFIED', 48, 120);
+  c.globalAlpha = 1; c.font = mono(600, 26); c.fillText(name.toUpperCase().slice(0, 22), 48, 90);
+  c.globalAlpha = 0.55; c.font = mono(500, 14); c.fillText('KINOVA SPATIAL PAYLOAD · VERIFIED', 48, 120);
   c.globalAlpha = 0.9; c.lineWidth = 2; c.beginPath(); c.moveTo(48, 136); c.lineTo(w - 48, 136); c.stroke();
   const cx = w / 2, cy = 275;
   c.globalAlpha = 0.85;
@@ -557,17 +641,16 @@ function drawBlueprint(name, token) {
   c.globalAlpha = 0.6; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(cx - 90, cy + 118); c.lineTo(cx + 90, cy + 118);
   c.moveTo(cx - 90, cy + 110); c.lineTo(cx - 90, cy + 126); c.moveTo(cx + 90, cy + 110); c.lineTo(cx + 90, cy + 126); c.stroke();
-  c.font = mono(500, 13); c.fillText('Ø 180.00 MM', cx - 40, cy + 144);
+  c.font = mono(500, 13); c.fillText('SPATIAL STREAM', cx - 50, cy + 144);
   c.globalAlpha = 0.7;
   [0.92, 0.78, 0.86, 0.55, 0.9, 0.7, 0.82, 0.4].forEach((f, i) => c.fillRect(48, 430 + i * 22, (w - 96) * f, 5));
   c.globalAlpha = 0.6; c.font = mono(500, 13);
   c.fillText('TKN ' + (token || '--------').slice(0, 12), 48, h - 40);
-  c.textAlign = 'right'; c.fillText('PG 01/04', w - 48, h - 40); c.textAlign = 'left';
+  c.textAlign = 'right'; c.fillText('LIVE', w - 48, h - 40); c.textAlign = 'left';
   c.globalAlpha = 1;
   docTex.needsUpdate = true;
 }
 drawBlueprint(docName, docToken);
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawBlueprint(docName, docToken));
 
 const docMat = shaderMat(
   VERT_UV,
@@ -959,10 +1042,9 @@ standby.group.visible = true;
 gsap.fromTo(standby.group.scale, { x: 0.001, y: 0.001, z: 0.001 }, { x: 1, y: 1, z: 1, duration: 1.4, ease: 'elastic.out(1,0.5)', delay: 0.2 });
 
 // ═══════════════════════════════════════════════════════════
-// AUDIO ENGINE (Web Audio with sub-bass and crystal chimes)
+// AUDIO ENGINE
 // ═══════════════════════════════════════════════════════════
 let AC = null, master = null, reverbSend = null, noiseBuffer = null;
-
 function initAudio() {
   if (AC) return;
   const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -1004,18 +1086,11 @@ function tone(o) {
   osc.type = o.type || 'sine';
   osc.frequency.setValueAtTime(o.f, t);
   if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t + o.dur);
-  if (o.detune) osc.detune.value = o.detune;
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(o.g, t + (o.a || 0.005));
   g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
   osc.connect(g); g.connect(master);
   if (o.wet) { const w = AC.createGain(); w.gain.value = o.wet; g.connect(w); w.connect(reverbSend); }
-  if (o.vib) {
-    const l = AC.createOscillator(), lg = AC.createGain();
-    l.frequency.value = o.vib[0]; lg.gain.value = o.vib[1];
-    l.connect(lg); lg.connect(osc.frequency);
-    l.start(t); l.stop(t + o.dur + 0.05);
-  }
   osc.start(t); osc.stop(t + o.dur + 0.05);
 }
 function noise(o) {
@@ -1033,48 +1108,21 @@ function noise(o) {
   g.gain.exponentialRampToValueAtTime(o.g, t + (o.a || o.dur * 0.3));
   g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
   s.connect(f); f.connect(g); g.connect(master);
-  if (o.wet) { const w = AC.createGain(); w.gain.value = o.wet; g.connect(w); w.connect(reverbSend); }
   s.start(t, Math.random() * 0.5); s.stop(t + o.dur + 0.05);
 }
 
 function playWhoosh(type) {
   if (!audioReady()) return;
-  if (type === '3D_MODEL') {
-    noise({ f1: 250, f2: 2600, dur: 0.55, q: 1.2, g: 0.22 });
-    tone({ f: 140, f2: 420, dur: 0.55, g: 0.08 });
-  } else if (type === 'DOCUMENT') {
-    noise({ f1: 600, f2: 7000, dur: 0.5, q: 2.5, g: 0.16 });
-  } else {
-    noise({ f1: 200, f2: 5200, dur: 0.6, q: 1.6, g: 0.2, wet: 0.4 });
-    tone({ f: 220, f2: 1760, dur: 0.6, g: 0.05, wet: 0.6 });
-  }
+  noise({ f1: 250, f2: 2600, dur: 0.55, q: 1.2, g: 0.22 });
+  tone({ f: 140, f2: 420, dur: 0.55, g: 0.08 });
 }
 
 function playImpact(type, vel) {
   if (!audioReady()) return;
-  const def = ASSET_DEFS[type];
+  const def = ASSET_DEFS[type] || ASSET_DEFS['DOCUMENT'];
   const k = Math.min(1.35, 0.65 + vel / 14);
   tone({ f: def.sub, f2: def.sub * 0.45, dur: def.subDur, g: 0.9 * k, a: 0.004 });
-  tone({ f: def.sub * 2, f2: def.sub * 0.9, dur: 0.35, g: 0.35 * k, a: 0.004 });
-  noise({ type: 'lowpass', f1: 900, f2: 120, dur: 0.25, g: 0.35 * k, q: 0.7, a: 0.004 });
-
-  if (type === '3D_MODEL') {
-    const base = 659.25;
-    [[1, 1], [2.0, 0.55], [2.76, 0.45], [5.4, 0.22], [8.93, 0.12]].forEach((p, i) =>
-      tone({ f: base * p[0], dur: 2.4 / (1 + i * 0.5), g: 0.12 * p[1] * k, a: 0.002, at: 0.02, wet: 0.5 }));
-    [[1.5, 1], [3.0, 0.4], [4.14, 0.25]].forEach((p, i) =>
-      tone({ f: base * p[0], dur: 1.8 / (1 + i * 0.5), g: 0.09 * p[1] * k, a: 0.002, at: 0.2, wet: 0.5 }));
-    [0, 0.09, 0.18].forEach((at) => noise({ f1: 3400, f2: 3000, dur: 0.05, q: 9, g: 0.25 * k, a: 0.003, at }));
-  } else if (type === 'DOCUMENT') {
-    [587.33, 880, 1174.66, 1760, 2349.32].forEach((f, i) =>
-      tone({ type: 'triangle', f, dur: 0.28, g: 0.1 * k, at: 0.03 + i * 0.055, wet: 0.3 }));
-    noise({ f1: 500, f2: 7000, dur: 0.5, q: 3, g: 0.1 * k, a: 0.15 });
-  } else {
-    [1, 1.5, 2, 2.997, 4.01].forEach((r, i) =>
-      tone({ f: 880 * r, dur: 2.8 - i * 0.25, g: (0.1 * k) / (1 + i * 0.4), a: 0.01, at: 0.02 + i * 0.03, wet: 0.9, vib: [5.5, 6 + i * 2], detune: (i - 2) * 6 }));
-    tone({ f: 2600, f2: 320, dur: 0.55, g: 0.08 * k, wet: 0.7 });
-    for (let i = 0; i < 8; i++) tone({ f: 3000 + Math.random() * 4500, dur: 0.18, g: 0.035 * k, at: 0.15 + Math.random() * 0.9, wet: 0.8 });
-  }
+  tone({ f: 880, dur: 1.2, g: 0.14 * k, wet: 0.6 });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1090,75 +1138,125 @@ function sizeBurst() {
   bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 sizeBurst();
-const MAX_SPARKS = 520;
 const sparks = [];
-let sparkDirty = false;
-const _tc = new THREE.Color();
-function paletteFor(hex) {
-  const base = hexToRgb(hex);
-  _tc.set(hex).offsetHSL(0.08, 0, 0.05);
-  const shifted = [Math.round(_tc.r * 255), Math.round(_tc.g * 255), Math.round(_tc.b * 255)];
-  const light = base.map((v) => Math.round(v + (255 - v) * 0.5));
-  return [base, light, [255, 255, 255], shifted];
-}
 function spawnSparks(x, y, hex, vel) {
-  const pal = paletteFor(hex);
-  const n = Math.min(150, MAX_SPARKS - sparks.length);
+  const base = hexToRgb(hex);
   const k = 0.8 + clamp(vel, 0, 20) / 20;
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < 120; i++) {
     const a = Math.random() * Math.PI * 2, sp = (3 + Math.random() * 11) * k;
-    sparks.push({
-      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      life: 1, decay: 0.012 + Math.random() * 0.02,
-      size: 1.2 + Math.random() * 3, rgb: pal[(Math.random() * pal.length) | 0],
-    });
+    sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, decay: 0.015, size: 2.2, rgb: base });
   }
 }
 function drawSparks(dt) {
-  if (!sparks.length) { if (sparkDirty) { bctx.clearRect(0, 0, bw, bh); sparkDirty = false; } return; }
-  sparkDirty = true;
+  if (!sparks.length) return;
   bctx.clearRect(0, 0, bw, bh);
-  bctx.globalCompositeOperation = 'lighter';
-  bctx.lineCap = 'round';
-  const k = dt * 60, damp = Math.pow(0.965, k);
+  const k = dt * 60;
   for (let i = sparks.length - 1; i >= 0; i--) {
     const p = sparks[i];
-    const ox = p.x, oy = p.y;
-    p.x += p.vx * k; p.y += p.vy * k;
-    p.vx *= damp; p.vy = p.vy * damp + 0.06 * k;
-    p.life -= p.decay * k;
-    if (p.life <= 0) { sparks[i] = sparks[sparks.length - 1]; sparks.pop(); continue; }
-    const c = p.rgb;
-    bctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${(p.life * 0.85).toFixed(3)})`;
-    bctx.lineWidth = p.size * p.life;
-    bctx.beginPath(); bctx.moveTo(ox - p.vx * 1.4, oy - p.vy * 1.4); bctx.lineTo(p.x, p.y); bctx.stroke();
+    p.x += p.vx * k; p.y += p.vy * k; p.life -= p.decay * k;
+    if (p.life <= 0) { sparks.splice(i, 1); continue; }
+    bctx.fillStyle = `rgba(${p.rgb[0]},${p.rgb[1]},${p.rgb[2]},${p.life})`;
+    bctx.beginPath(); bctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2); bctx.fill();
   }
-  bctx.globalCompositeOperation = 'source-over';
-}
-const _v3 = new THREE.Vector3();
-function stageToScreen() {
-  _v3.set(0, 0.15, 0).project(camera);
-  return { x: (_v3.x + 1) / 2 * window.innerWidth, y: (1 - _v3.y) / 2 * window.innerHeight };
 }
 
 // ═══════════════════════════════════════════════════════════
-// HUD
+// REAL FILE MODAL & STAGE UPLOAD (LAPTOP <-> PHONE)
 // ═══════════════════════════════════════════════════════════
-let transferCount = 0, statusTimer = 0, badgeTl = null, hotTimer = 0;
-let linkKind = 'offline';
+let activeFilePayload = null;
+
+function showFileModal(fileData, sourceLabel) {
+  activeFilePayload = fileData;
+  const modal = $('file-modal');
+  const box = $('file-preview-box');
+  $('file-source-label').textContent = sourceLabel;
+  $('file-modal-name').textContent = fileData.name;
+  $('file-modal-size').textContent = fileData.size_str || '';
+  const dlBtn = $('file-dl-btn');
+  dlBtn.href = fileData.url;
+  dlBtn.setAttribute('download', fileData.name);
+
+  const isImg = /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(fileData.name);
+  if (isImg) {
+    box.innerHTML = `<img src="${fileData.url}" alt="${fileData.name}" />`;
+  } else {
+    box.innerHTML = `<div class="file-doc-icon">📄<div style="font-size:11px;font-family:var(--mono);margin-top:6px;color:var(--text-2)">${fileData.name.split('.').pop().toUpperCase()}</div></div>`;
+  }
+
+  modal.classList.add('show');
+  gsap.fromTo(modal, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power3.out' });
+}
+
+$('file-close-btn').addEventListener('click', () => {
+  $('file-modal').classList.remove('show');
+});
+
+async function uploadAndShareFromLaptop(file) {
+  if (!file) return;
+  paintStatus('retry', 'Uploading file to room…');
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('room', ROOM_CODE);
+
+  try {
+    const res = await fetch('/api/upload/', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.status === 'success') {
+      const sizeKb = (data.size / 1024).toFixed(1) + ' KB';
+      const payload = {
+        room: ROOM_CODE,
+        asset_id: 'shared_file',
+        asset_name: data.name,
+        asset_type: 'DOCUMENT',
+        asset_color: '#06b6d4',
+        file_url: data.url,
+        file_size: sizeKb,
+        sender: 'LAPTOP',
+        timestamp: Date.now(),
+        velocity: 8.5,
+        token: 'FILE' + Math.floor(1000 + Math.random() * 9000)
+      };
+
+      // Broadcast to Phone Controller so phone user can grab/pull it!
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'STAGE_FILE_READY', payload }));
+      }
+
+      // Render on Laptop Stage too
+      handleThrow(payload);
+      showFileModal({ name: data.name, url: data.url, size_str: sizeKb }, 'Shared to Phone · Ready to Grab');
+    }
+  } catch (err) {
+    paintStatus('', 'Upload failed');
+  }
+}
+
+$('stage-file-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) uploadAndShareFromLaptop(e.target.files[0]);
+});
+
+// Drag & Drop directly onto Laptop Stage
+window.addEventListener('dragover', (e) => { e.preventDefault(); $('drop-zone-overlay').classList.add('active'); });
+window.addEventListener('dragleave', (e) => { if (!e.relatedTarget) $('drop-zone-overlay').classList.remove('active'); });
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  $('drop-zone-overlay').classList.remove('active');
+  if (e.dataTransfer.files[0]) uploadAndShareFromLaptop(e.dataTransfer.files[0]);
+});
+
+// ═══════════════════════════════════════════════════════════
+// HUD & CINEMATIC TRANSITIONS
+// ═══════════════════════════════════════════════════════════
+let transferCount = 0, statusTimer = 0, badgeTl = null, hotTimer = 0, linkKind = 'offline';
 const badge = $('asset-badge');
 gsap.set(badge, { xPercent: -50, opacity: 0, y: 30 });
 
 function paintStatus(kind, text) { $('status-dot').className = 'dot ' + kind; $('status-text').textContent = text; }
-function setLink(kind) {
-  linkKind = kind;
-  if (statusTimer) return;
-  restoreStatus();
-}
+function setLink(kind) { linkKind = kind; if (!statusTimer) restoreStatus(); }
 function restoreStatus() {
   if (linkKind === 'live')       paintStatus('live', transferCount ? 'Link live' : 'Link live · awaiting signal');
   else if (linkKind === 'retry') paintStatus('retry', 'Reconnecting…');
-  else                           paintStatus('', 'Offline · keys 1 2 3 = demo');
+  else                           paintStatus('', 'Offline');
 }
 function countTo(el, to, dec) {
   if (el._tw) el._tw.kill();
@@ -1175,12 +1273,14 @@ function normalize(raw) {
   const vel = Number(p.velocity), ts = Number(p.timestamp);
   return {
     type,
-    id: String(p.asset_id || '').slice(0, 40),
-    name: String(p.asset_name || def.name).slice(0, 28),
+    name: String(p.asset_name || def.name).slice(0, 32),
     color: /^#[0-9a-fA-F]{6}$/.test(p.asset_color) ? p.asset_color : def.color,
     velocity: Number.isFinite(vel) ? Math.max(0, vel) : 0,
     ts: Number.isFinite(ts) && ts > 0 ? ts : null,
     token: String(p.token || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 32).toUpperCase(),
+    file_url: p.file_url || null,
+    file_size: p.file_size || '',
+    sender: p.sender || 'CONTROLLER',
   };
 }
 
@@ -1188,14 +1288,13 @@ function updateHud(d) {
   const def = ASSET_DEFS[d.type];
   transferCount++;
   const lat = d.ts ? Date.now() - d.ts : null;
-  const latOk = lat !== null && lat > -2000 && lat < 30000;
-  const latVal = latOk ? Math.max(0, lat) : null;
+  const latVal = (lat !== null && lat > -2000 && lat < 30000) ? Math.max(0, lat) : null;
 
   $('badge-icon').innerHTML = ICONS[d.type];
   $('tc-icon').innerHTML = ICONS[d.type];
-  $('badge-kicker').textContent = def.kicker;
+  $('badge-kicker').textContent = d.file_url ? 'Real file transferred' : def.kicker;
   setBoth('badge-name', 'tc-name', d.name);
-  setBoth('badge-type', 'tc-type', d.type);
+  setBoth('badge-type', 'tc-type', d.file_url ? 'FILE' : d.type);
   setBoth('badge-token', 'tv-token', shortToken(d.token));
   setBoth('badge-room', 'tv-room', ROOM_CODE);
   $('tv-count').textContent = String(transferCount);
@@ -1204,7 +1303,7 @@ function updateHud(d) {
   else { countTo($('badge-latency'), latVal, 0); countTo($('tv-latency'), latVal, 0); }
   countTo($('badge-velocity'), d.velocity, 2); countTo($('tv-velocity'), d.velocity, 2);
 
-  paintStatus('hot', 'Transfer received');
+  paintStatus('hot', d.file_url ? 'File Received!' : 'Transfer received');
   clearTimeout(statusTimer);
   statusTimer = setTimeout(() => { statusTimer = 0; restoreStatus(); }, 5500);
 
@@ -1222,13 +1321,8 @@ function updateHud(d) {
     .to(badge, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out' })
     .to('#badge-bar', { width: Math.round(clamp(d.velocity / 15, 0.08, 1) * 100) + '%', duration: 1.1, ease: 'power3.out' }, 0.15)
     .to(badge, { opacity: 0, y: 12, duration: 0.6, ease: 'power2.in' }, '+=6');
-
-  gsap.fromTo('#glow-main', { opacity: 1.8 }, { opacity: 1, duration: 1.4, ease: 'power2.out', overwrite: true });
 }
 
-// ═══════════════════════════════════════════════════════════
-// THROW / PULL CINEMATIC TRANSITIONS
-// ═══════════════════════════════════════════════════════════
 const cam = { fov: BASE_FOV, kick: 0, shake: 0 };
 let camTl = null, entryTl = null;
 
@@ -1241,14 +1335,12 @@ function retire(a) {
 }
 
 function impact(d) {
-  const pt = stageToScreen();
   gsap.fromTo(U.uImpact, { value: 1 }, { value: 0, duration: 1.4, ease: 'power3.out', overwrite: true });
   gsap.fromTo(fx, { light: 4 }, { light: 0, duration: 1.3, ease: 'power3.out', overwrite: true });
   const flash = $('impact-flash');
   gsap.fromTo(flash, { opacity: 0 }, { opacity: 1, duration: 0.07, onComplete: () => gsap.to(flash, { opacity: 0, duration: 0.7 }), overwrite: true });
   fireShock(shockFloor, 0.3, 11, 1.5, 0.9);
   fireShock(shockFace, 0.4, 7, 1.1, 0.8);
-  fireShock(shockFace2, 0.2, 9.5, 1.5, 0.5);
   gsap.fromTo(gridU.uPulseR, { value: 0 }, { value: 18, duration: 1.8, ease: 'power2.out', overwrite: true });
   gsap.fromTo(gridU.uPulseA, { value: 1 }, { value: 0, duration: 1.8, ease: 'power1.in', overwrite: true });
   if (camTl) camTl.kill();
@@ -1256,7 +1348,7 @@ function impact(d) {
     .to(cam, { fov: BASE_FOV + 16, kick: -0.5, shake: 0.14, duration: 0.08, ease: 'power2.out' })
     .to(cam, { fov: BASE_FOV, kick: 0, shake: 0, duration: 1.1, ease: 'elastic.out(1,0.6)' });
   fireBurst3D(d.velocity);
-  spawnSparks(pt.x, pt.y, d.color, d.velocity);
+  spawnSparks(window.innerWidth / 2, window.innerHeight / 2, d.color, d.velocity);
   playImpact(d.type, d.velocity);
 }
 
@@ -1268,6 +1360,11 @@ function handleThrow(raw) {
   applyTheme(d.color);
   if (d.type === 'DOCUMENT') drawBlueprint(d.name, d.token);
   updateHud(d);
+
+  // If it's a real file sent from the phone controller, open preview & download card
+  if (d.file_url && d.sender !== 'LAPTOP') {
+    showFileModal({ name: d.name, url: d.file_url, size_str: d.file_size }, 'Received from Phone Controller');
+  }
 
   if (prev && prev !== next) retire(prev);
   current = next;
@@ -1301,27 +1398,21 @@ function handlePull(payload) {
       }
     });
 
-    if (audioReady()) {
-      noise({ f1: 3000, f2: 300, dur: 0.45, q: 2, g: 0.25 });
-    }
-
-    paintStatus('retry', 'Asset Retrieved to Mobile');
+    if (audioReady()) noise({ f1: 3000, f2: 300, dur: 0.45, q: 2, g: 0.25 });
+    paintStatus('retry', 'Asset Pulled by Phone');
     $('badge-name').textContent = 'PULLED BACK';
-    $('badge-kicker').textContent = 'Asset Transferred to Controller';
-    $('tv-room').textContent = ROOM_CODE;
+    $('badge-kicker').textContent = 'Transferred to Mobile';
     gsap.fromTo(badge, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 });
     gsap.to(badge, { opacity: 0, y: 10, duration: 0.4, delay: 3 });
-
     setTimeout(() => { restoreStatus(); }, 3500);
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-// RENDER LOOP
+// RENDER LOOP & WEBSOCKET
 // ═══════════════════════════════════════════════════════════
 const clock = new THREE.Clock();
 let px = 0, py = 0, tx = 0, ty = 0;
-let perfAcc = 0, perfN = 0, perfT = 0;
 
 window.addEventListener('pointermove', (e) => {
   tx = e.clientX / window.innerWidth - 0.5;
@@ -1352,22 +1443,8 @@ function loop() {
   updateBurst3D(dt);
   drawSparks(dt);
   renderer.render(scene, camera);
-
-  perfAcc += dt; perfN++; perfT += dt;
-  if (perfN >= 90) {
-    if (perfT > 2 && perfAcc / perfN > 0.024 && pixelRatio > 1) {
-      pixelRatio = Math.max(1, pixelRatio - 0.25);
-      renderer.setPixelRatio(pixelRatio); U.uPx.value = pixelRatio;
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      perfT = 0;
-    }
-    perfAcc = 0; perfN = 0;
-  }
 }
 
-// ═══════════════════════════════════════════════════════════
-// WEBSOCKET
-// ═══════════════════════════════════════════════════════════
 let ws = null, retry = 0, retryTimer = 0;
 function connectWS() {
   clearTimeout(retryTimer);
@@ -1385,16 +1462,12 @@ function connectWS() {
     }
   };
   sock.onclose = () => { if (ws === sock) { setLink('retry'); scheduleRetry(); } };
-  sock.onerror = () => { try { sock.close(); } catch (e) { /* noop */ } };
+  sock.onerror = () => { try { sock.close(); } catch (e) {} };
 }
 function scheduleRetry() {
   retryTimer = setTimeout(connectWS, Math.min(8000, 800 * Math.pow(1.6, retry++)));
 }
-window.addEventListener('pagehide', () => { ws = null; try { renderer.dispose(); } catch (e) { /* noop */ } });
 
-// ═══════════════════════════════════════════════════════════
-// RESIZE · DEMO KEYS · BOOT
-// ═══════════════════════════════════════════════════════════
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -1402,27 +1475,11 @@ window.addEventListener('resize', () => {
   fitCamera(); sizeBurst();
 });
 
-const DEMO_ORDER = ['3D_MODEL', 'DOCUMENT', 'HOLOGRAM'];
-let demoIdx = -1;
-function simulate(type) {
-  unlockAudio();
-  const def = ASSET_DEFS[type];
-  const rnd = new Uint8Array(8); crypto.getRandomValues(rnd);
-  const payload = {
-    room: ROOM_CODE,
-    asset_id: type.toLowerCase(), asset_name: def.name, asset_type: type, asset_color: def.color,
-    timestamp: Date.now() - Math.floor(Math.random() * 60 + 15),
-    velocity: +(Math.random() * 9 + 3).toFixed(2),
-    token: Array.from(rnd, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase(),
-  };
-  setTimeout(() => handleThrow(payload), 60);
-}
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Digit1') { demoIdx = 0; simulate(DEMO_ORDER[0]); }
-  else if (e.code === 'Digit2') { demoIdx = 1; simulate(DEMO_ORDER[1]); }
-  else if (e.code === 'Digit3') { demoIdx = 2; simulate(DEMO_ORDER[2]); }
-  else if (e.code === 'Space') { e.preventDefault(); demoIdx = (demoIdx + 1) % 3; simulate(DEMO_ORDER[demoIdx]); }
-  else if (e.key === 'p' || e.key === 'P') { handlePull({}); }
+  if (e.code === 'Digit1') handleThrow({ asset_type: '3D_MODEL', asset_name: 'Chronos Nebula', asset_color: '#06b6d4', velocity: 6.5 });
+  else if (e.code === 'Digit2') handleThrow({ asset_type: 'DOCUMENT', asset_name: 'Project Horizon', asset_color: '#a78bfa', velocity: 7.2 });
+  else if (e.code === 'Digit3') handleThrow({ asset_type: 'HOLOGRAM', asset_name: 'Aura Artifact', asset_color: '#f59e0b', velocity: 8.1 });
+  else if (e.key === 'p' || e.key === 'P') handlePull({});
 });
 
 $('room-display').textContent = ROOM_CODE;
