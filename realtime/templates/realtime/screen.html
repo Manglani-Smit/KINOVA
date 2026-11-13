@@ -1191,44 +1191,76 @@ $('file-close-btn').addEventListener('click', () => {
   $('file-modal').classList.remove('show');
 });
 
-async function uploadAndShareFromLaptop(file) {
+function uploadAndShareFromLaptop(file) {
   if (!file) return;
-  paintStatus('retry', 'Uploading file to room…');
+
+  const maxBytes = 3 * 1024 * 1024 * 1024; // 3 GB limit
+  if (file.size > maxBytes) {
+    alert(`File is too large (${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB). Max limit is 3 GB.`);
+    return;
+  }
+
+  paintStatus('retry', 'Uploading: 0%');
   const fd = new FormData();
   fd.append('file', file);
   fd.append('room', ROOM_CODE);
 
-  try {
-    const res = await fetch('/api/upload/', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.status === 'success') {
-      const sizeKb = (data.size / 1024).toFixed(1) + ' KB';
-      const payload = {
-        room: ROOM_CODE,
-        asset_id: 'shared_file',
-        asset_name: data.name,
-        asset_type: 'DOCUMENT',
-        asset_color: '#06b6d4',
-        file_url: data.url,
-        file_size: sizeKb,
-        sender: 'LAPTOP',
-        timestamp: Date.now(),
-        velocity: 8.5,
-        token: 'FILE' + Math.floor(1000 + Math.random() * 9000)
-      };
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/upload/', true);
 
-      // Broadcast to Phone Controller so phone user can grab/pull it!
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ action: 'STAGE_FILE_READY', payload }));
-      }
-
-      // Render on Laptop Stage too
-      handleThrow(payload);
-      showFileModal({ name: data.name, url: data.url, size_str: sizeKb }, 'Shared to Phone · Ready to Grab');
+  xhr.upload.onprogress = (event) => {
+    if (event.lengthComputable) {
+      const percent = Math.round((event.loaded / event.total) * 100);
+      paintStatus('retry', `Uploading: ${percent}%`);
     }
-  } catch (err) {
+  };
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      if (data.status === 'success') {
+        let sizeStr = '';
+        if (data.size < 1024 * 1024) {
+          sizeStr = (data.size / 1024).toFixed(1) + ' KB';
+        } else if (data.size < 1024 * 1024 * 1024) {
+          sizeStr = (data.size / (1024 * 1024)).toFixed(1) + ' MB';
+        } else {
+          sizeStr = (data.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+
+        const payload = {
+          room: ROOM_CODE,
+          asset_id: 'shared_file',
+          asset_name: data.name,
+          asset_type: 'DOCUMENT',
+          asset_color: '#06b6d4',
+          file_url: data.url,
+          file_size: sizeStr,
+          sender: 'LAPTOP',
+          timestamp: Date.now(),
+          velocity: 8.5,
+          token: 'FILE' + Math.floor(1000 + Math.random() * 9000)
+        };
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'STAGE_FILE_READY', payload }));
+        }
+
+        handleThrow(payload);
+        showFileModal({ name: data.name, url: data.url, size_str: sizeStr }, 'Shared to Phone · Ready to Grab');
+        return;
+      }
+    }
     paintStatus('', 'Upload failed');
-  }
+    alert('Upload failed (Status: ' + xhr.status + ')');
+  };
+
+  xhr.onerror = () => {
+    paintStatus('', 'Network error');
+    alert('Network error while uploading file.');
+  };
+
+  xhr.send(fd);
 }
 
 $('stage-file-input').addEventListener('change', (e) => {

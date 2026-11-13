@@ -117,7 +117,7 @@
     #telemetry-panel, #gesture-guide { display: none; }
   }
 
-  /* Responsive 4-Card Dock (Fits 100% on any Mobile Screen) */
+  /* Responsive 4-Card Dock */
   #asset-dock-wrap { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; padding: 0 10px 14px; }
   #dock-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
 
@@ -156,7 +156,6 @@
     background: rgba(var(--card-accent-rgb, 6,182,212), 0.12);
   }
 
-  /* Invisible Mobile-Compatible File Input Overlay */
   #phone-file-input {
     position: absolute;
     inset: 0;
@@ -302,7 +301,7 @@
     <span id="banner-emoji">💎</span><span id="banner-name">Chronos Nebula</span><span id="banner-type" style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">3D</span>
     <div id="banner-ready"><span>● Ready</span></div>
   </div>
-  <div id="dock-label">Tap Card to Select or Upload File</div>
+  <div id="dock-label">Tap Card to Select or Upload File (Max 3 GB)</div>
   <div id="asset-dock">
     <div class="asset-card active" data-idx="0" style="--card-accent:#06b6d4;--card-accent-rgb:6,182,212">
       <div class="asset-preview">
@@ -325,7 +324,7 @@
       </div>
       <div class="asset-info"><div class="asset-name">Aura</div><div class="asset-type-tag">HOLO</div></div>
     </div>
-    <!-- 4th Card: Direct Mobile File Picker -->
+    <!-- 4th Card: Direct Mobile File Picker (Max 3 GB) -->
     <div class="asset-card" id="custom-file-card" data-idx="3" style="--card-accent:#10b981;--card-accent-rgb:16,185,129; border-color: rgba(16,185,129,0.4);">
       <input type="file" id="phone-file-input" />
       <div class="asset-preview">
@@ -334,7 +333,7 @@
       </div>
       <div class="asset-info">
         <div class="asset-name" id="custom-file-name">Upload</div>
-        <div class="asset-type-tag" id="custom-file-tag">FILE</div>
+        <div class="asset-type-tag" id="custom-file-tag">MAX 3GB</div>
       </div>
     </div>
   </div>
@@ -379,46 +378,84 @@ function playBuzz(freq, dur = 0.15) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PHONE FILE UPLOAD HANDLER
+// PHONE FILE UPLOAD HANDLER (MAX 3 GB + LIVE % PROGRESS)
 // ═══════════════════════════════════════════════════════════
-document.getElementById('phone-file-input').addEventListener('change', async (e) => {
+document.getElementById('phone-file-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  document.getElementById('custom-file-name').textContent = 'Wait…';
+  const maxBytes = 3 * 1024 * 1024 * 1024; // 3 GB
+  if (file.size > maxBytes) {
+    alert(`File is too large (${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB). Max limit is 3 GB.`);
+    e.target.value = '';
+    return;
+  }
+
+  let sizeStr = '';
+  if (file.size < 1024 * 1024) {
+    sizeStr = (file.size / 1024).toFixed(1) + ' KB';
+  } else if (file.size < 1024 * 1024 * 1024) {
+    sizeStr = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+  } else {
+    sizeStr = (file.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+
+  document.getElementById('custom-file-name').textContent = sizeStr;
   document.getElementById('custom-file-emoji').textContent = '⏳';
+  document.getElementById('custom-file-tag').textContent = '0%';
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('room', ROOM_CODE);
 
-  try {
-    const res = await fetch('/api/upload/', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.status === 'success') {
-      const isImg = /\.(png|jpg|jpeg|gif|webp)$/i.test(data.name);
-      const sizeKb = (data.size / 1024).toFixed(1) + ' KB';
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/upload/', true);
 
-      ASSETS[3] = {
-        id: 'custom_file',
-        name: data.name,
-        type: isImg ? 'HOLOGRAM' : 'DOCUMENT',
-        emoji: isImg ? '🖼️' : '📄',
-        color: '#10b981',
-        colorRgb: '16,185,129',
-        file_url: data.url,
-        file_size: sizeKb
-      };
-
-      document.getElementById('custom-file-name').textContent = data.name;
-      document.getElementById('custom-file-emoji').textContent = ASSETS[3].emoji;
-      document.getElementById('custom-file-tag').textContent = 'READY';
-      selectAsset(3, true);
+  xhr.upload.onprogress = (event) => {
+    if (event.lengthComputable) {
+      const percent = Math.round((event.loaded / event.total) * 100);
+      document.getElementById('custom-file-tag').textContent = percent + '%';
     }
-  } catch (err) {
+  };
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      if (data.status === 'success') {
+        const isImg = /\.(png|jpg|jpeg|gif|webp)$/i.test(data.name);
+
+        ASSETS[3] = {
+          id: 'custom_file',
+          name: data.name,
+          type: isImg ? 'HOLOGRAM' : 'DOCUMENT',
+          emoji: isImg ? '🖼️' : '📄',
+          color: '#10b981',
+          colorRgb: '16,185,129',
+          file_url: data.url,
+          file_size: sizeStr
+        };
+
+        document.getElementById('custom-file-name').textContent = data.name;
+        document.getElementById('custom-file-emoji').textContent = ASSETS[3].emoji;
+        document.getElementById('custom-file-tag').textContent = 'READY';
+        selectAsset(3, true);
+        return;
+      }
+    }
+    document.getElementById('custom-file-name').textContent = 'Failed';
+    document.getElementById('custom-file-emoji').textContent = '⚠️';
+    document.getElementById('custom-file-tag').textContent = 'RETRY';
+    alert('Upload failed (Status: ' + xhr.status + ')');
+  };
+
+  xhr.onerror = () => {
     document.getElementById('custom-file-name').textContent = 'Error';
     document.getElementById('custom-file-emoji').textContent = '⚠️';
-  }
+    document.getElementById('custom-file-tag').textContent = 'RETRY';
+    alert('Network error while uploading file.');
+  };
+
+  xhr.send(fd);
 });
 
 const STATES = { IDLE:'IDLE', HOLDING:'HOLDING', CHARGED:'CHARGED', THROW:'THROW', COOLDOWN:'COOLDOWN', CANCEL:'CANCEL' };
